@@ -1,0 +1,20 @@
+# Web Framework
+fastapi
+uvicorn[standard]
+python-multipart    # Needed for uploading files/images to your CNN
+
+# Data Science Core
+numpy
+pandas
+scipy
+
+# Visualization
+matplotlib
+seaborn
+
+# Machine Learning & AI
+scikit-learn        # This is the package name for "sklearn"
+tensorflow          # This includes Keras automatically
+
+# Optimization
+bayesian-optimization
