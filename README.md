@@ -3,10 +3,11 @@
 🤖 KitaHack Team Ashley - AI/ML Project
 A full-stack AI application using React (Frontend), FastAPI (Backend), and TensorFlow/Scikit-Learn (Machine Learning). The entire stack is containerized with Docker for easy deployment and development.
 
-📂 Project Structure
+## 📂 Project Structure
+
 This project follows a "Science vs. Production" separation of concerns.
 
-Plaintext
+```text
 KITAHACK_TEAMASHLEY/
 ├── docker-compose.yml          # Orchestrates Frontend, Backend, and DB
 ├── README.md                   # You are here
@@ -29,6 +30,9 @@ KITAHACK_TEAMASHLEY/
     ├── src/                    # React Source Code
     ├── Dockerfile              # Node.js Environment
     └── package.json            # JS Dependencies
+```
+
+
 🚀 Quick Start
 1. Prerequisites
 Docker Desktop (running)
@@ -50,7 +54,10 @@ API Documentation: http://localhost:8000/docs
 If you modify requirements.txt or package.json, force a rebuild:
 
 Bash
+```text
 docker compose up -d --build
+```
+
 🧠 Machine Learning Workflow
 We use a Hybrid Workflow: Train in Notebooks, Serve in API.
 
