@@ -21,6 +21,8 @@ services:
       - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true  # Some versions of Webpack/CRA need this instead
+      - WDS_SOCKET_PORT=0       # Prevents HMR websocket errors
     stdin_open: true
     tty: true
     depends_on:

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './App.css';
 
 function App() {
@@ -12,16 +12,16 @@ function App() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       [name]: value
-    });
+    }));
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors({
-        ...errors,
+      setErrors(prev => ({
+        ...prev,
         [name]: ''
-      });
+      }));
     }
   };
 
@@ -90,7 +90,7 @@ function App() {
         {/* Left side - Medical themed image */}
         <div className="login-image">
           <div className="medical-icon">⚕️</div>
-          <h1>Medical System</h1>
+          <h1>Medical Health</h1>
           <p>Secure healthcare management platform</p>
         </div>
 
