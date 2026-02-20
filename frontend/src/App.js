@@ -1,7 +1,11 @@
 import { useState } from 'react';
+import Dashboard from './Dashboard';
 import './App.css';
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState('');
+
   const [formData, setFormData] = useState({
     userId: '',
     password: '',
@@ -75,15 +79,42 @@ function App() {
       .then(data => {
         console.log('Success:', data);
         // Handle successful login (e.g., redirect to dashboard)
+        setUserName(data.name || formData.userId);
+        setIsLoggedIn(true);
       })
       .catch((error) => {
         console.error('Error:', error);
       });
     */
 
-    alert('Login form submitted successfully!');
+    // For demo purposes, immediately login after validation
+    setUserName(formData.userId);
+    setIsLoggedIn(true);
   };
 
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUserName('');
+    setFormData({
+      userId: '',
+      password: '',
+      verificationCode: ''
+    });
+    setErrors({});
+  };
+
+  // If logged in, show the Dashboard
+  if (isLoggedIn) {
+    return (
+      <Dashboard 
+        userName={userName}
+        userRole="Doctor" // You can dynamically set this based on login
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  // Otherwise, show the Login Page
   return (
     <div className="app">
       <div className="login-container">
