@@ -63,3 +63,135 @@ async def analyze_medical_media(
 
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=502, detail=f"Failed to communicate with RunPod: {str(e)}")
+    
+
+from fastapi import FastAPI, HTTPException, Query
+from database import patients_collection
+from models import Patient
+from bson.objectid import ObjectId
+import re # For partial name search
+
+app = FastAPI()
+
+# GET PATIENTS (Search by ID, Name, or Get All)
+@app.get("/patients")
+def get_patients(
+    patient_id: str | None = Query(default=None),
+    name: str | None = Query(default=None)
+):
+    query = {}
+    
+    # If searching by name
+    if name:
+        query["patient_info.name"] = {"$regex": name, "$options": "i"}
+    
+    # If searching by ID 
+    if patient_id:
+        query["patient_info.id"] = patient_id
+
+    patients = []
+
+    for patient in patients_collection.find(query):
+        patients.append({
+            "id": str(patient["_id"]),
+            "patient_info": patient.get("patient_info"),
+            "clinical_record": patient.get("clinical_record") # Included for the Dr. UI
+        })
+
+    if not patients:
+        return {"message": "No patients found", "data": []}
+
+    return {"count": len(patients), "data": patients}
+
+
+# DASHBOARD DATA 
+@app.get("/dashboard")
+def get_dashboard_data():
+    # A. Total Patients
+    total = patients_collection.count_documents({})
+    
+    # B. High Risk Patients (Probability > 0.70)
+    high_risk = patients_collection.count_documents({
+        "clinical_record.ai_prognosis.probability": {"$gt": 0.70}
+    })
+    
+    # C. Pending Diagnoses
+    pending = patients_collection.count_documents({
+        "clinical_record.diagnosis.status": {"$in": ["Pending", "In Progress", "Critical"]}
+    })
+    
+    # D. Generate Alerts 
+    alerts = []
+    for p in patients_collection.find():
+        biomarkers = p.get("clinical_record", {}).get("biomarkers", "").lower()
+        if "mutation" in biomarkers or "pathogenic" in biomarkers:
+            alerts.append({
+                "patient": p["patient_info"]["name"],
+                "message": f"AI detected abnormal biomarkers for {p['patient_info']['name']}",
+                "severity": "HIGH"
+            })
+
+    return {
+        "stats": {
+            "total_patients": total,
+            "high_risk": high_risk,
+            "pending_diagnoses": pending,
+            "accuracy": "94%",
+            "treatment_success": "89%"
+        },
+        "alerts": alerts[:4] # Return top 4 for the UI
+    }
+
+
+# CREATE NEW PATIENT
+@app.post("/patients")
+def create_patient(patient: Patient):
+    existing = patients_collection.find_one({"patient_info.id": patient.id})
+    if existing:
+        raise HTTPException(status_code=400, detail="Patient ID already exists")
+
+    new_patient = {
+        "patient_info": { "id": patient.id, "name": patient.name },
+        "clinical_record": {
+            "biomarkers": "",
+            "diagnosis": {"status": "Pending"},
+            "ai_prognosis": {"probability": 0.0}
+        }
+    }
+    result = patients_collection.insert_one(new_patient)
+    return {"message": "Patient created", "id": str(result.inserted_id)}
+
+
+# UPDATE PATIENT
+@app.put("/patients/{patient_id}")
+def update_patient(patient_id: str, patient: Patient):
+    result = patients_collection.update_one(
+        {"patient_info.id": patient_id},
+        {"$set": {"patient_info.name": patient.name}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    return {"message": "Updated successfully"}
+
+
+# DELETE PATIENT
+@app.delete("/patients/{patient_id}")
+def delete_patient(patient_id: str):
+    result = patients_collection.delete_one({"patient_info.id": patient_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    return {"message": f"Patient {patient_id} deleted"}
+
+
+# DEBUG
+@app.get("/debug/all")
+def debug_all():
+    data = []
+    for doc in patients_collection.find():
+        doc["_id"] = str(doc["_id"])
+        data.append(doc)
+
+    return {
+        "count": len(data),
+        "data": data
+    }
