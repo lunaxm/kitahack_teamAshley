@@ -13,15 +13,13 @@ KITAHACK_TEAMASHLEY/
 ├── README.md                   # You are here
 │
 ├── backend/                    # 🐍 Python API & Machine Learning
-│   ├── api/                    # API Endpoints (FastAPI)
-│   │   ├── routes.py           # Defines /predict, /train endpoints
-│   │   └── schemas.py          # Input/Output data validation
-│   ├── data/                   # 💾 Raw datasets (GitIgnored)
-│   ├── models/                 # 🧠 Trained .pkl/.h5 models (GitIgnored)
-│   ├── notebooks/              # 📓 Jupyter Notebooks for experiments
-│   ├── ml/                     # ML Logic (Training & Inference scripts)
+│   ├── runpod_worker/          # Heavy GPU code deployed to RunPod
+│   │   ├── handler.py          # RunPod serverless API entry point (Inference)
+│   │   ├── model_utils.py      # Helper to load base MedGemma + trained adapters
+│   │   └── train.py            # Script for QLoRa batch training
+│   ├── runpod_client.py        # Logic to encode images to Base64 and ping RunPod
 │   ├── config.py               # Path configurations (Data/Model paths)
-│   ├── main.py                 # Application Entry Point
+│   ├── main.py                 # Application Entry Point using FastAPI routes
 │   ├── Dockerfile              # Python Environment (TensorFlow, Pandas, etc.)
 │   └── requirements.txt        # Python Dependencies
 │
