@@ -4,6 +4,10 @@ import requests
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Header, Request, Query, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from app.services.database import get_stats, db_search_patients, db_delete_patient, db_get_debug_data
+import app.services.database as db_layer
 
 load_dotenv()
 
@@ -65,25 +69,6 @@ async def analyze_medical_media(
         raise HTTPException(status_code=502, detail=f"Failed to communicate with RunPod: {str(e)}")
     
 
-
-
-######################################
-
-
-from fastapi import FastAPI, HTTPException, Header, Request, Query, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-import database as db_layer
-
-app = FastAPI()
-
-# Enable CORS for frontend connection
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # The System Getaway
 @app.post("/api/gateway")
 async def system_gateway(request: Request, role: str = Header(None)):
@@ -141,11 +126,8 @@ async def run_ai_batch_analysis(patient_id: str, record_id: str):
     await asyncio.sleep(5) # Wait for 5 seconds
     
     ai_results = {"probability": 0.88, "outcome": "High Risk Detected"}
-    
-    from database import db_update_record
-    db_update_record(record_id, {"clinical_record.ai_prognosis": ai_results})
+    db_layer.db_update_record(record_id, {"clinical_record.ai_prognosis": ai_results})
     print(f"AI Batch Process completed for {patient_id}")
-
 
 # Update gateway to trigger the batch process
 @app.post("/api/gateway")
@@ -195,3 +177,11 @@ async def delete_patient(p_id: str, role: str = Header(None)):
 async def debug(role: str = Header(None)):
     if role != "admin": raise HTTPException(status_code=403)
     return db_layer.db_get_debug_data()
+
+@app.get("/test-config")
+async def test_config():
+    return {
+        "endpoint_id_loaded": bool(RUNPOD_ENDPOINT_ID),
+        "api_key_loaded": bool(RUNPOD_API_KEY),
+        "hf_token_loaded": bool(os.getenv("HF_TOKEN"))
+    }

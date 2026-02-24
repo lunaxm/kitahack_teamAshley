@@ -4,9 +4,10 @@ import base64
 import io
 from PIL import Image
 from transformers import AutoProcessor, AutoModelForImageTextToText, BitsAndBytesConfig
+from peft import PeftModel, LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
-processor = None
-model = None
+base_model = AutoModelForImageTextToText.from_pretrained("google/medgemma-1.5-27b-it", ...)
+model = PeftModel.from_pretrained(base_model, "../ml_data/saved_adapters")
 
 def initialize_medgemma():
     """Loads the model into VRAM before the endpoint starts accepting traffic."""
