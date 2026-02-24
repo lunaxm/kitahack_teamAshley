@@ -65,133 +65,133 @@ async def analyze_medical_media(
         raise HTTPException(status_code=502, detail=f"Failed to communicate with RunPod: {str(e)}")
     
 
-from fastapi import FastAPI, HTTPException, Query
-from database import patients_collection
-from models import Patient
-from bson.objectid import ObjectId
-import re # For partial name search
+
+
+######################################
+
+
+from fastapi import FastAPI, HTTPException, Header, Request, Query, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+import database as db_layer
 
 app = FastAPI()
 
-# GET PATIENTS (Search by ID, Name, or Get All)
-@app.get("/patients")
-def get_patients(
-    patient_id: str | None = Query(default=None),
-    name: str | None = Query(default=None)
-):
-    query = {}
+# Enable CORS for frontend connection
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# The System Getaway
+@app.post("/api/gateway")
+async def system_gateway(request: Request, role: str = Header(None)):
+    payload = await request.json()
+    event = payload.get("event", "UNKNOWN").upper()
+    p_id = payload.get("patient_id")
+    rec_id = payload.get("record_id")
+    raw_data = payload.get("data", {})
+
+    # Role: Admin
+    if role == "admin":
+        if event == "CREATE_PATIENT":
+            db_layer.db_create_patient(raw_data)
+            return {"status": "SUCCESS", "msg": "Admin: Patient record created."}
+        
+    # Role: Medical Tech
+    elif role == "medical_tech":
+        if event == "UPDATE_LABS":
+            update = {
+                "clinical_record.imaging": raw_data.get("imaging"),
+                "clinical_record.biomarkers": raw_data.get("biomarkers")
+            }
+            db_layer.db_update_record(rec_id, update)
+            return {"status": "SUCCESS", "msg": "MedTech: Lab data updated."}
+
+    # Role: Doctor
+    elif role == "doctor":
+        if event == "RUN_PROGNOSIS":
+            # AI simulation, but using input data for now
+            update = {
+                "clinical_record.diagnosis.name": raw_data.get("diagnosis"),
+                "clinical_record.ai_prognosis": {"probability": 0.88, "outcome": "AI Analyzed"}
+            }
+            db_layer.db_update_record(rec_id, update)
+            return {"status": "SUCCESS", "msg": "Doctor: AI Prognosis Generated."}
+        
+        elif event == "UPDATE_TREATMENT":
+            update = {"clinical_record.treatment": raw_data}
+            db_layer.db_update_record(rec_id, update)
+            return {"status": "SUCCESS", "msg": "Doctor: Treatment plan updated."}
+
+    # Role: Pharmacist
+    elif role == "pharmacist":
+        if event == "GET_PRESCRIPTION":
+            history = db_layer.db_get_patient_history(p_id)
+            return {"status": "SUCCESS", "data": history["history"][0].get("clinical_record", {}).get("treatment")}
+
+    raise HTTPException(status_code=403, detail="Unauthorized role or event.")
+
+# Run AI Prognosis in background 
+async def run_ai_batch_analysis(patient_id: str, record_id: str):
+    print(f"AI Batch Process started for {patient_id}")
     
-    # If searching by name
-    if name:
-        query["patient_info.name"] = {"$regex": name, "$options": "i"}
+    import asyncio
+    await asyncio.sleep(5) # Wait for 5 seconds
     
-    # If searching by ID 
-    if patient_id:
-        query["patient_info.id"] = patient_id
-
-    patients = []
-
-    for patient in patients_collection.find(query):
-        patients.append({
-            "id": str(patient["_id"]),
-            "patient_info": patient.get("patient_info"),
-            "clinical_record": patient.get("clinical_record") # Included for the Dr. UI
-        })
-
-    if not patients:
-        return {"message": "No patients found", "data": []}
-
-    return {"count": len(patients), "data": patients}
-
-
-# DASHBOARD DATA 
-@app.get("/dashboard")
-def get_dashboard_data():
-    # A. Total Patients
-    total = patients_collection.count_documents({})
+    ai_results = {"probability": 0.88, "outcome": "High Risk Detected"}
     
-    # B. High Risk Patients (Probability > 0.70)
-    high_risk = patients_collection.count_documents({
-        "clinical_record.ai_prognosis.probability": {"$gt": 0.70}
-    })
-    
-    # C. Pending Diagnoses
-    pending = patients_collection.count_documents({
-        "clinical_record.diagnosis.status": {"$in": ["Pending", "In Progress", "Critical"]}
-    })
-    
-    # D. Generate Alerts 
-    alerts = []
-    for p in patients_collection.find():
-        biomarkers = p.get("clinical_record", {}).get("biomarkers", "").lower()
-        if "mutation" in biomarkers or "pathogenic" in biomarkers:
-            alerts.append({
-                "patient": p["patient_info"]["name"],
-                "message": f"AI detected abnormal biomarkers for {p['patient_info']['name']}",
-                "severity": "HIGH"
-            })
-
-    return {
-        "stats": {
-            "total_patients": total,
-            "high_risk": high_risk,
-            "pending_diagnoses": pending,
-            "accuracy": "94%",
-            "treatment_success": "89%"
-        },
-        "alerts": alerts[:4] # Return top 4 for the UI
-    }
+    from database import db_update_record
+    db_update_record(record_id, {"clinical_record.ai_prognosis": ai_results})
+    print(f"AI Batch Process completed for {patient_id}")
 
 
-# CREATE NEW PATIENT
-@app.post("/patients")
-def create_patient(patient: Patient):
-    existing = patients_collection.find_one({"patient_info.id": patient.id})
-    if existing:
-        raise HTTPException(status_code=400, detail="Patient ID already exists")
+# Update gateway to trigger the batch process
+@app.post("/api/gateway")
+async def gateway(request: Request, background_tasks: BackgroundTasks, role: str = Header(None)):
+    payload = await request.json()
+    event = payload.get("event")
+    p_id = payload.get("patient_id")
+    rec_id = payload.get("record_id")
 
-    new_patient = {
-        "patient_info": { "id": patient.id, "name": patient.name },
-        "clinical_record": {
-            "biomarkers": "",
-            "diagnosis": {"status": "Pending"},
-            "ai_prognosis": {"probability": 0.0}
+    if event == "RUN_PROGNOSIS" and role == "doctor":
+        background_tasks.add_task(run_ai_batch_analysis, p_id, rec_id)
+        
+        return {
+            "status": "PROCESSING",
+            "message": "AI analysis has started in the background. Dashboard will update shortly."
         }
-    }
-    result = patients_collection.insert_one(new_patient)
-    return {"message": "Patient created", "id": str(result.inserted_id)}
 
+# Dashboard
+@app.get("/api/dashboard")
+async def dashboard(role: str = Header(None)):
+    if role not in ["doctor", "admin"]:
+        raise HTTPException(status_code=403, detail="Dashboard access denied.")
+    return db_layer.get_stats()
 
-# UPDATE PATIENT
-@app.put("/patients/{patient_id}")
-def update_patient(patient_id: str, patient: Patient):
-    result = patients_collection.update_one(
-        {"patient_info.id": patient_id},
-        {"$set": {"patient_info.name": patient.name}}
-    )
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Patient not found")
-    return {"message": "Updated successfully"}
+# Search Patient
+@app.get("/api/patients/search")
+async def search_patient(query: str = Query(...), role: str = Header(None)):
+    if role not in ["admin", "doctor", "medical_tech"]:
+        raise HTTPException(status_code=403, detail="Search denied.")
+    
+    data = db_layer.db_search_patients(query)
 
+    if data is None:
+        raise HTTPException(status_code=404, detail="No patient found.")   
+    
+    return {"status": "SUCCESS", "data": data}
 
-# DELETE PATIENT
-@app.delete("/patients/{patient_id}")
-def delete_patient(patient_id: str):
-    result = patients_collection.delete_one({"patient_info.id": patient_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Patient not found")
-    return {"message": f"Patient {patient_id} deleted"}
+# Delete patient record
+@app.delete("/api/patients/{p_id}")
+async def delete_patient(p_id: str, role: str = Header(None)):
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Only Admins can delete.")
+    return db_layer.db_delete_patient(p_id)
 
-
-# DEBUG
-@app.get("/debug/all")
-def debug_all():
-    data = []
-    for doc in patients_collection.find():
-        doc["_id"] = str(doc["_id"])
-        data.append(doc)
-
-    return {
-        "count": len(data),
-        "data": data
-    }
+# Debug
+@app.get("/api/debug/all")
+async def debug(role: str = Header(None)):
+    if role != "admin": raise HTTPException(status_code=403)
+    return db_layer.db_get_debug_data()
