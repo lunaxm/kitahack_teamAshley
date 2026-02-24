@@ -73,8 +73,11 @@ async def analyze_medical_media(
 from fastapi import FastAPI, HTTPException, Header, Request, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 import database as db_layer
+from motor.motor_asyncio import AsyncIOMotorClient
+import os
 
 app = FastAPI()
+MONGODB_URI = os.getenv("MONGO_URI")
 
 # Enable CORS for frontend connection
 app.add_middleware(
@@ -83,6 +86,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Startup and Shutdown URL
+@app.on_event("startup")
+async def startup_db_client():
+    app.mongodb_client = AsyncIOMotorClient(MONGODB_URI)
+    app.mongodb = app.mongodb_client.my_database_name
+    print("Connected to MongoDB!")
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    app.mongodb_client.close()
+    print("MongoDB connection closed.")
 
 # The System Getaway
 @app.post("/api/gateway")

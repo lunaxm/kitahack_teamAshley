@@ -4,6 +4,9 @@ uvicorn==0.27.1
 python-multipart>=0.0.9
 requests
 python-dotenv
+pymongo
+PyJWT
+pydantic
 
 # Database & Persistence
 sqlalchemy
