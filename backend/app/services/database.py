@@ -5,16 +5,34 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+client: AsyncIOMotorClient = None
 db = None
-patients_collection = None
 records_collection = None
+clinical_records = None
+db_users = None
 
-def initialize_db(client: AsyncIOMotorClient):
-    global db, patients_collection, records_collection
-    db_name = os.getenv("db", "MedicalDB").strip()
+def initialize_db(app_client: AsyncIOMotorClient):
+    global db, patients_collection, clinical_records, db_users  
+    # db_name = os.getenv("db", "MedicalDB").strip()
+    # db = client[db_name]
+    # patients_collection = db["Patients"]
+    # records_collection = db["Records"]
+
+    client = app_client
+    db_name = os.getenv("db", "MedicalDB").strip(' "\'')
     db = client[db_name]
     patients_collection = db["Patients"]
-    records_collection = db["Records"]
+    clinical_records = db["Clinical_records"]
+    db_users = db["Users"]
+
+    print(f" Successfully initialized database: {db_name} with collections: Patients, Clinical_records, Users")
+
+def close_df():
+    global client
+    if client:
+        client.close()
+        print("MongoDB connection closed.")
+
 
 # Dashboard Logic 
 async def get_stats():

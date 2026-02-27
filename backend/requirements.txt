@@ -12,4 +12,6 @@ transformers==5.2.0
 trl==0.28.0
 certifi
 motor
+httpx
+python-dotenv
 uvicorn

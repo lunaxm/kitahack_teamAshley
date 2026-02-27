@@ -1,13 +1,6 @@
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
+
 # app/services/prompt_builder.
 import re
-=======
-# app/services/prompt_builder.py
->>>>>>> Stashed changes
-=======
-# app/services/prompt_builder.py
->>>>>>> Stashed changes
 
 # Dictionary of specialized medical roles
 MEDICAL_ROLES = {
@@ -65,8 +58,6 @@ def build_prognosis_prompt(role_key: str, current_details: dict, historical_reco
     if has_image:
         context_str += "\n**Medical Imaging:**\n- [An image/scan has been provided in the input payload for your visual analysis.]\n"
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
     # 4. Detailed Task (Flush left to avoid leading spaces)
     detailed_task = """### Analysis Task:
 Provide the top 10 potential prognoses based on the clinical context and visual inferences from the scan.
@@ -124,37 +115,11 @@ Details: [Your detailed clinical inference and justification]"""
 
 {context_str}
 
-=======
-=======
->>>>>>> Stashed changes
-    # 4. Detailed Task
-    detailed_task = """### Analysis Task:
-Provide the top 10 potential prognoses based on the clinical context and visual inferences from the scan. For each prognosis, you must provide a probability score and a clinical justification detailing your reasoning."""
-
-    # 5. Output Format
-    output_format = """### Output Format:
-Please format your response strictly as follows:
-1. **[Prognosis Name]** (Probability: [XX]%)
-   - **Justification:** [Your detailed clinical inference based on the scans and blood test results]
-2. **[Prognosis Name]** (Probability: [XX]%)
-   - **Justification:** [...]
-...(continue for top 10)"""
-
-    # Assemble the final prompt
-    final_prompt = f"""{role_str}
-{objective_str}
-
-{context_str}
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-{detailed_task}
+a{detailed_task}
 
 {output_format}"""
 
     return final_prompt.strip()
-
 
 def build_treatment_prompt(role_key: str, confirmed_diagnosis: str, current_details: dict, historical_records: list) -> str:
     """
@@ -188,10 +153,9 @@ Please format your response strictly as follows:
 {objective_str}
 
 {context_str}
+
 {output_format}"""
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
     return final_prompt.strip()
 
 def parse_prognosis_text_to_json(raw_text: str) -> list:
@@ -216,9 +180,3 @@ def parse_prognosis_text_to_json(raw_text: str) -> list:
             })
             
     return parsed_data
-=======
-    return final_prompt.strip()
->>>>>>> Stashed changes
-=======
-    return final_prompt.strip()
->>>>>>> Stashed changes

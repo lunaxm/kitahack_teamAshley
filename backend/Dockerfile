@@ -17,8 +17,8 @@ ARG HF_TOKEN
 ENV HF_TOKEN=$HF_TOKEN
 
 # 2. Copy the download script and run it
-COPY download_model.py .
-RUN python download_model.py
+# COPY download_model.py .
+# RUN python download_model.py
 
 # 5. Copy the rest of the code
 COPY . .

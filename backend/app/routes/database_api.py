@@ -6,8 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 # from app.services.database import get_stats, db_search_patients, db_delete_patient, db_get_debug_data
-import services.database as db_layer
-from services.dependencies import get_database
+import app.services.database as db_layer
+from app.services.dependencies import get_database
 from app.model.models import GatewayRequest, PatientCreateRequest
 
 load_dotenv()

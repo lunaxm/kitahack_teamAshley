@@ -8,10 +8,14 @@ import io
 from PIL import Image
 from transformers import AutoProcessor, AutoModelForImageTextToText, BitsAndBytesConfig
 from peft import PeftModel
+import os
+from dotenv import load_dotenv
 
 # Declare globals so the handler can access them, but don't load them yet
 processor = None
 model = None
+
+load_dotenv()
 
 def initialize_medgemma():
     """Loads the base model, applies quantization, and merges LoRA adapters."""
@@ -21,7 +25,7 @@ def initialize_medgemma():
     # adapter_path = "../ml_data/saved_adapters"
 
     # CHANGE THIS from "google/..." to your local Docker folder
-    model_id = "/model_cache" 
+    model_id = os.getenv("MODEL_PATH")
     adapter_path = "./saved_adapters"
     
     print("Initializing MedGemma and loading into VRAM...")
@@ -81,6 +85,10 @@ def handler(job):
     
     return {"medical_analysis": response_text}
 
+# ---------------------------------------------------------
 # Start the Serverless listener
-initialize_medgemma()
-runpod.serverless.start({"handler": handler})
+# This ensures initialize_medgemma() runs EXACTLY once when the container boots
+# ---------------------------------------------------------
+if __name__ == "__main__":
+    initialize_medgemma()
+    runpod.serverless.start({"handler": handler})
