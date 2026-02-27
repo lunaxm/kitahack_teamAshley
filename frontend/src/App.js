@@ -16,78 +16,31 @@ function App() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    // Clear error when user starts typing
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.userId.trim()) {
-      newErrors.userId = 'User ID is required';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    }
-
+    if (!formData.userId.trim()) newErrors.userId = 'User ID is required';
+    if (!formData.password) newErrors.password = 'Password is required';
     if (!formData.verificationCode) {
       newErrors.verificationCode = 'Verification code is required';
     } else if (formData.verificationCode.length !== 6 || !/^\d+$/.test(formData.verificationCode)) {
       newErrors.verificationCode = 'Please enter a valid 6-digit code';
     }
-
     return newErrors;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     const newErrors = validateForm();
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-
-    // Here you would typically send the data to your backend API
-    console.log('Login attempt:', {
-      userId: formData.userId,
-      password: '***hidden***',
-      verificationCode: formData.verificationCode
-    });
-
-    // Example API call (uncomment and modify as needed):
-    /*
-    fetch('/api/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-    })
-      .then(response => response.json())
-      .then(data => {
-        console.log('Success:', data);
-        // Handle successful login (e.g., redirect to dashboard)
-        setUserName(data.name || formData.userId);
-        setIsLoggedIn(true);
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
-    */
-
-    // For demo purposes, immediately login after validation
     setUserName(formData.userId);
     setIsLoggedIn(true);
   };
@@ -95,30 +48,28 @@ function App() {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUserName('');
-    setFormData({
-      userId: '',
-      password: '',
-      verificationCode: ''
-    });
+    setFormData({ userId: '', password: '', verificationCode: '' });
     setErrors({});
   };
 
-  // If logged in, show the Dashboard
+  // ✅ FIXED: Dashboard is wrapped in a plain <div>, NOT inside .app
+  // This prevents the flex/centering styles from overlaying the dashboard
   if (isLoggedIn) {
     return (
-      <Dashboard 
-        userName={userName}
-        userRole="Doctor" // You can dynamically set this based on login
-        onLogout={handleLogout}
-      />
+      <div>
+        <Dashboard
+          userName={userName}
+          userRole="Doctor"
+          onLogout={handleLogout}
+        />
+      </div>
     );
   }
 
-  // Otherwise, show the Login Page
   return (
     <div className="app">
       <div className="login-container">
-        {/* Left side - Medical themed image */}
+        {/* Left side */}
         <div className="login-image">
           <div className="medical-icon">⚕️</div>
           <h1>Medical Health</h1>
