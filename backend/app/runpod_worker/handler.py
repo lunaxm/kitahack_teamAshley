@@ -4,15 +4,20 @@ import base64
 import io
 from PIL import Image
 from transformers import AutoProcessor, AutoModelForImageTextToText, BitsAndBytesConfig
-from peft import PeftModel, LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from peft import PeftModel
 
-base_model = AutoModelForImageTextToText.from_pretrained("google/medgemma-1.5-27b-it", ...)
-model = PeftModel.from_pretrained(base_model, "../ml_data/saved_adapters")
+# Declare globals so the handler can access them, but don't load them yet
+processor = None
+model = None
 
 def initialize_medgemma():
-    """Loads the model into VRAM before the endpoint starts accepting traffic."""
+    """Loads the base model, applies quantization, and merges LoRA adapters."""
     global processor, model
+    
     model_id = "google/medgemma-1.5-27b-it"
+    adapter_path = "../ml_data/saved_adapters"
+    
+    print("Initializing MedGemma and loading into VRAM...")
     
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
@@ -22,23 +27,28 @@ def initialize_medgemma():
     )
     
     processor = AutoProcessor.from_pretrained(model_id)
-    model = AutoModelForImageTextToText.from_pretrained(
+    
+    # 1. Load the Base Model FIRST with Quantization
+    base_model = AutoModelForImageTextToText.from_pretrained(
         model_id, 
         quantization_config=bnb_config,
         device_map="auto"
     )
-    print("MedGemma 27B successfully loaded into VRAM.")
+    
+    # 2. Wrap the Base Model with your custom LoRA Adapters
+    model = PeftModel.from_pretrained(base_model, adapter_path)
+    
+    print("MedGemma 27B + Adapters successfully loaded into VRAM.")
 
 def handler(job):
     """Processes incoming jobs from the RunPod queue."""
-    job_input = job["input"] # RunPod injects your payload into this 'input' key
+    job_input = job["input"] 
     prompt_text = job_input.get("prompt", "")
     base64_string = job_input.get("image_base64")
     
     content_list = []
     
     if base64_string:
-        # Decode the Base64 string back into a PIL Image
         image_data = base64.b64decode(base64_string)
         image = Image.open(io.BytesIO(image_data)).convert("RGB")
         content_list.append({"type": "image", "image": image})
@@ -46,7 +56,6 @@ def handler(job):
     content_list.append({"type": "text", "text": prompt_text})
     messages = [{"role": "user", "content": content_list}]
     
-    # AutoProcessor automatically handles the strict 896x896 padding
     inputs = processor.apply_chat_template(
         messages, 
         add_generation_prompt=True, 
@@ -67,4 +76,4 @@ def handler(job):
 
 # Start the Serverless listener
 initialize_medgemma()
-runpod.serverless.start({"handler": handler}) # Required to launch the worker
+runpod.serverless.start({"handler": handler})

@@ -3,19 +3,19 @@ import re
 from pymongo import MongoClient
 from dotenv import load_dotenv
 
-load_dotenv()
+# load_dotenv()
 
-# Credentials
-MONGO_URI = os.getenv("MONGODB_URL")
-DB_NAME = os.getenv("db").strip()
-SECRET = os.getenv("SECRET_KEY")
+# # Credentials
+# MONGO_URI = os.getenv("MONGODB_URL")
+# DB_NAME = os.getenv("db").strip()
+# SECRET = os.getenv("SECRET_KEY")
 
-client = MongoClient(MONGO_URI)
-db = client[DB_NAME]
-patients_collection = db["Patients"]
-records_collection = db["ClinicalRecords"]
+# client = MongoClient(MONGO_URI)
+# db = client[DB_NAME]
+# patients_collection = db["Patients"]
+# records_collection = db["ClinicalRecords"]
 
-print(f"Database connection established successfully.")
+# print(f"Database connection established successfully.")
 
 # Dashboard Logic 
 def get_stats():

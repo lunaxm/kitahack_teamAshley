@@ -10,4 +10,6 @@ runpod==1.8.1
 torch==2.10.0
 transformers==5.2.0
 trl==0.28.0
+certifi
+motor
 uvicorn
