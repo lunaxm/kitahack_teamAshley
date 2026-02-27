@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Header, Request, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from app.services.database import get_stats, db_search_patients, db_delete_patient, db_get_debug_data
+# from app.services.database import get_stats, db_search_patients, db_delete_patient, db_get_debug_data
 import app.services.database as db_layer
 
 load_dotenv()
