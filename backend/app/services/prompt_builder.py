@@ -1,4 +1,5 @@
-# app/services/prompt_builder.py
+# app/services/prompt_builder.
+import re
 
 # Dictionary of specialized medical roles
 MEDICAL_ROLES = {
@@ -56,24 +57,63 @@ def build_prognosis_prompt(role_key: str, current_details: dict, historical_reco
     if has_image:
         context_str += "\n**Medical Imaging:**\n- [An image/scan has been provided in the input payload for your visual analysis.]\n"
 
-    # 4. Detailed Task
+    # 4. Detailed Task (Flush left to avoid leading spaces)
     detailed_task = """### Analysis Task:
-Provide the top 10 potential prognoses based on the clinical context and visual inferences from the scan. For each prognosis, you must provide a probability score and a clinical justification detailing your reasoning."""
+Provide the top 10 potential prognoses based on the clinical context and visual inferences from the scan.
+Constraint 1: You MUST rank them in descending order, starting with the highest probability at number 1.
+Constraint 2: Do not include any conversational filler, introductory text, greetings, or concluding remarks. Output ONLY the ranked list."""
 
-    # 5. Output Format
-    output_format = """### Output Format:
-Please format your response strictly as follows:
-1. **[Prognosis Name]** (Probability: [XX]%)
-   - **Justification:** [Your detailed clinical inference based on the scans and blood test results]
-2. **[Prognosis Name]** (Probability: [XX]%)
-   - **Justification:** [...]
-...(continue for top 10)"""
+    # 5. Output Format (Flush left)
+    output_format = """### Strict Output Format:
+You must format every single item exactly like this template:
+
+1. Prognosis: [Name of Prognosis]
+Probability: [XX]%
+Details: [Your detailed clinical inference and justification]
+
+2. Prognosis: [Name of Prognosis]
+Probability: [XX]%
+Details: [Your detailed clinical inference and justification]
+
+3. Prognosis: [Name of Prognosis]
+Probability: [XX]%
+Details: [Your detailed clinical inference and justification]
+
+4. Prognosis: [Name of Prognosis]
+Probability: [XX]%
+Details: [Your detailed clinical inference and justification]
+
+5. Prognosis: [Name of Prognosis]
+Probability: [XX]%
+Details: [Your detailed clinical inference and justification]
+
+6. Prognosis: [Name of Prognosis]
+Probability: [XX]%
+Details: [Your detailed clinical inference and justification]
+
+7. Prognosis: [Name of Prognosis]
+Probability: [XX]%
+Details: [Your detailed clinical inference and justification]
+
+8. Prognosis: [Name of Prognosis]
+Probability: [XX]%
+Details: [Your detailed clinical inference and justification]
+
+9. Prognosis: [Name of Prognosis]
+Probability: [XX]%
+Details: [Your detailed clinical inference and justification]
+
+10. Prognosis: [Name of Prognosis]
+Probability: [XX]%
+Details: [Your detailed clinical inference and justification]"""
 
     # Assemble the final prompt
     final_prompt = f"""{role_str}
+
 {objective_str}
 
 {context_str}
+
 {detailed_task}
 
 {output_format}"""
@@ -116,3 +156,26 @@ Please format your response strictly as follows:
 {output_format}"""
 
     return final_prompt.strip()
+
+def parse_prognosis_text_to_json(raw_text: str) -> list:
+    """Converts the strict MedGemma text output into a list of Python dictionaries."""
+    parsed_data = []
+    
+    # Split the giant string into individual blocks every time it sees "1. Prognosis:", "2. Prognosis:", etc.
+    blocks = re.split(r'\n(?=\d+\.\s*Prognosis:)', raw_text.strip())
+    
+    for block in blocks:
+        # Extract the specific lines using regex
+        prognosis_match = re.search(r'Prognosis:\s*(.*)', block)
+        probability_match = re.search(r'Probability:\s*(.*)', block)
+        details_match = re.search(r'Details:\s*(.*)', block, re.DOTALL) # DOTALL captures multi-line details
+        
+        # If all three pieces were successfully found, add them to the array
+        if prognosis_match and probability_match and details_match:
+            parsed_data.append({
+                "prognosis": prognosis_match.group(1).strip(),
+                "probability": probability_match.group(1).strip(),
+                "details": details_match.group(1).strip()
+            })
+            
+    return parsed_data

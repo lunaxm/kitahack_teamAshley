@@ -10,7 +10,15 @@ WORKDIR /app
 COPY requirements.txt .
 
 # 4. Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt huggingface_hub
+
+# 1. Set up the Hugging Face Token for the build
+ARG HF_TOKEN
+ENV HF_TOKEN=$HF_TOKEN
+
+# 2. Copy the download script and run it
+COPY download_model.py .
+RUN python download_model.py
 
 # 5. Copy the rest of the code
 COPY . .

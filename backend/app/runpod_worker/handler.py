@@ -17,8 +17,12 @@ def initialize_medgemma():
     """Loads the base model, applies quantization, and merges LoRA adapters."""
     global processor, model
     
-    model_id = "google/medgemma-1.5-27b-it"
-    adapter_path = "../ml_data/saved_adapters"
+    # model_id = "google/medgemma-1.5-27b-it"
+    # adapter_path = "../ml_data/saved_adapters"
+
+    # CHANGE THIS from "google/..." to your local Docker folder
+    model_id = "/model_cache" 
+    adapter_path = "./saved_adapters"
     
     print("Initializing MedGemma and loading into VRAM...")
     

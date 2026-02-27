@@ -1,11 +1,14 @@
 # app/routes/medgemma_api.py
+import asyncio
+import asyncio
 import os
 from fastapi import APIRouter, Request, HTTPException, Depends
 from pydantic import BaseModel
-from app.services.prompt_builder import build_prognosis_prompt, build_treatment_prompt
+from app.services.prompt_builder import build_prognosis_prompt, build_treatment_prompt, parse_prognosis_text_to_json
 
 router = APIRouter()
-RUNPOD_URL = f"https://api.runpod.ai/v2/{os.getenv('RUNPOD_ENDPOINT_ID')}/runsync"
+RUNPOD_URL = f"https://api.runpod.ai/v2/{os.getenv('RUNPOD_ENDPOINT_ID')}/run"
+RUNPOD_STATUS_URL = f"https://api.runpod.ai/v2/{os.getenv('RUNPOD_ENDPOINT_ID')}/status" # <--- ADD THIS URL
 
 class PrognosisRequest(BaseModel):
     patient_id: str
@@ -22,16 +25,16 @@ class TreatmentRequest(BaseModel):
 @router.post("/generate-prognosis")
 async def get_ai_prognosis(request: Request, payload: PrognosisRequest):
     # 1. Fetch historical records from MongoDB
-    db = request.app.database
-    records_collection = db["ClinicalRecords"]
-    history_cursor = records_collection.find({"patient_id": payload.patient_id}).sort("visit_date", -1)
-    historical_records = await history_cursor.to_list(length=10)
+    # db = request.app.database
+    # records_collection = db["ClinicalRecords"]
+    # history_cursor = records_collection.find({"patient_id": payload.patient_id}).sort("visit_date", -1)
+    # historical_records = await history_cursor.to_list(length=10)
     
     # 2. Build the strict prompt
     engineered_prompt = build_prognosis_prompt(
         role_key=payload.role,
         current_details=payload.current_details,
-        historical_records=historical_records,
+        historical_records=[],  # No historical records in this version
         has_image=bool(payload.image_base64)
     )
     
@@ -44,10 +47,48 @@ async def get_ai_prognosis(request: Request, payload: PrognosisRequest):
     }
     
     client = request.app.runpod_client
+    # response = await client.post(RUNPOD_URL, json=runpod_payload)
+    # response.raise_for_status()
+
+    # # 4. Extract and Parse  
+    # raw_llm_text = response.json()["output"]["medical_analysis"]
+    # structured_json_array = parse_prognosis_text_to_json(raw_llm_text)
+    
+    # return {"status": "success", "prognosis_data": structured_json_array}
+# 3. Initial Request to RunPod
+    print("Sending job to RunPod...")
     response = await client.post(RUNPOD_URL, json=runpod_payload)
     response.raise_for_status()
+    result_data = response.json()
     
-    return {"status": "success", "prognosis_data": response.json()["output"]["medical_analysis"]}
+    job_id = result_data.get("id")
+    status = result_data.get("status")
+    
+    # 4. THE POLLING LOOP: Wait patiently if it's in the queue or processing
+    while status in ["IN_QUEUE", "IN_PROGRESS"]:
+        print(f"RunPod Job {job_id} is {status}. Waiting 5 seconds...")
+        await asyncio.sleep(5) # Pause for 5 seconds without blocking the rest of the app
+        
+        # Check the status endpoint
+        status_response = await client.get(f"{RUNPOD_STATUS_URL}/{job_id}")
+        status_response.raise_for_status()
+        result_data = status_response.json()
+        status = result_data.get("status")
+
+    # 5. Handle the Final Result
+    if status == "COMPLETED":
+        print("Job Complete! Extracting data...")
+        raw_llm_text = result_data["output"]["medical_analysis"]
+        structured_json_array = parse_prognosis_text_to_json(raw_llm_text) # Your text parser
+        
+        return {
+            "status": "success", 
+            "prognosis_data": structured_json_array
+        }
+    else:
+        # If it returns FAILED or something else
+        print(f"RunPod Error Data: {result_data}")
+        raise HTTPException(status_code=500, detail=f"RunPod job failed with status: {status}")
 
 @router.post("/generate-treatment")
 async def get_ai_treatment(request: Request, payload: TreatmentRequest):
