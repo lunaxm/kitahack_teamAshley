@@ -4,15 +4,17 @@ import requests
 import certifi
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Header, Request, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from motor.motor_asyncio import AsyncIOMotorClient
+from dotenv import load_dotenv
+import httpx
 from app.routes.runpod_api import router as runpod_api_router
 from app.routes.database_api import router as database_api_router
 from app.routes.medgemma_api import router as medgemma_api_router
-import httpx
+from app.services import database as db_layer
+###app.include_router(database_api_router, prefix="/api/database")
 
 load_dotenv()
 
@@ -24,6 +26,7 @@ async def lifespan(app: FastAPI):
 
     print("Connecting to MongoDB...")
     MONGODB_URL = os.getenv("MONGO_URL")
+    DB_NAME = os.getenv("db", "MedicalDB").strip() 
     print(f"Using MongoDB URI: {MONGODB_URL}")
     app.mongodb_client = AsyncIOMotorClient(
         MONGODB_URL, tlsCAFile=certifi.where())
@@ -57,3 +60,26 @@ app = FastAPI(title="kitahack_teamAshley Gateway", lifespan=lifespan)
 app.include_router(runpod_api_router, prefix = "/api/runpod")
 app.include_router(database_api_router, prefix = "/api/database")
 app.include_router(medgemma_api_router, prefix = "/api/medgemma")
+
+
+app = FastAPI(title="kitahack_teamAshley Gateway", lifespan=lifespan)
+
+# Enable CORS for frontend connection
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(database_api_router)
+
+@app.get("/")
+async def root():
+    return {"status": "Online", "msg": "KitaHack Medical API"}
+
+@app.get("/api/debug/all")
+async def debug(role: str = Header(None)):
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Only Admins can view raw data.")
+    return await db_layer.db_get_debug_data()
