@@ -1,6 +1,10 @@
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 # app/services/prompt_builder.
 import re
+=======
+# app/services/prompt_builder.py
+>>>>>>> Stashed changes
 =======
 # app/services/prompt_builder.py
 >>>>>>> Stashed changes
@@ -62,6 +66,7 @@ def build_prognosis_prompt(role_key: str, current_details: dict, historical_reco
         context_str += "\n**Medical Imaging:**\n- [An image/scan has been provided in the input payload for your visual analysis.]\n"
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     # 4. Detailed Task (Flush left to avoid leading spaces)
     detailed_task = """### Analysis Task:
 Provide the top 10 potential prognoses based on the clinical context and visual inferences from the scan.
@@ -120,6 +125,8 @@ Details: [Your detailed clinical inference and justification]"""
 {context_str}
 
 =======
+=======
+>>>>>>> Stashed changes
     # 4. Detailed Task
     detailed_task = """### Analysis Task:
 Provide the top 10 potential prognoses based on the clinical context and visual inferences from the scan. For each prognosis, you must provide a probability score and a clinical justification detailing your reasoning."""
@@ -138,6 +145,9 @@ Please format your response strictly as follows:
 {objective_str}
 
 {context_str}
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 {detailed_task}
 
@@ -181,6 +191,7 @@ Please format your response strictly as follows:
 {output_format}"""
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     return final_prompt.strip()
 
 def parse_prognosis_text_to_json(raw_text: str) -> list:
@@ -205,6 +216,9 @@ def parse_prognosis_text_to_json(raw_text: str) -> list:
             })
             
     return parsed_data
+=======
+    return final_prompt.strip()
+>>>>>>> Stashed changes
 =======
     return final_prompt.strip()
 >>>>>>> Stashed changes
