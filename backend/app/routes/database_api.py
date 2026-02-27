@@ -6,8 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 # from app.services.database import get_stats, db_search_patients, db_delete_patient, db_get_debug_data
-from app.services import database as db_layer
-from app.services.dependencies import get_database
+import services.database as db_layer
+from services.dependencies import get_database
+from app.model.models import GatewayRequest, PatientCreateRequest
 
 load_dotenv()
 
@@ -19,53 +20,98 @@ async def add_patient_record(patient_data: dict, db=Depends(get_database)):
     return result
     
 
-# The System Getaway
-@router.post("/api/gateway")
-async def system_gateway(request: Request, background_tasks: BackgroundTasks, role: str = Header(None)):    
-    payload = await request.json()
-    event = payload.get("event", "UNKNOWN").upper()
-    p_id = payload.get("patient_id")
-    rec_id = payload.get("record_id")
-    raw_data = payload.get("data", {})
+# CRUD Operations
+async def create(role: str, event: str, data: dict):
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Unauthorized: Only Admins can create records.")
 
-    # Role: Admin
+    if event == "CREATE_PATIENT":
+        patient_obj = PatientCreateRequest(**data)
+        result = await db_layer.db_create_patient(patient_obj.dict())
+        return {"status": "SUCCESS", "msg": "Patient record initialized", "id": str(result.inserted_id)}
+    
+    raise HTTPException(status_code=400, detail="Invalid Creation Event")
+
+
+async def read(role: str, event: str, patient_id: str):
+    if not patient_id:
+        raise HTTPException(status_code=400, detail="patient_id is required for read operations")
+
+    history_data = await db_layer.db_get_patient_history(patient_id)
+    if not history_data or not history_data.get("history"):
+        raise HTTPException(status_code=404, detail="No clinical history found.")
+
+    latest_record = history_data["history"][0]
+
+    if role == "pharmacist":
+        if event == "GET_PRESCRIPTION":
+            return {"status": "SUCCESS", "data": latest_record.get("clinical_record", {}).get("treatment")}
+        raise HTTPException(status_code=403, detail="Pharmacists can only access prescriptions.")
+
+    if role == "doctor":
+        if event == "GET_PROGNOSIS":
+            return {"status": "SUCCESS", "data": latest_record.get("clinical_record", {}).get("ai_prognosis")}
+        return {"status": "SUCCESS", "data": latest_record}
+
+    raise HTTPException(status_code=403, detail=f"Role {role} not authorized for reading this data.")
+
+
+async def update(role: str, event: str, record_id: str, data: dict):#
+    if not record_id:
+        raise HTTPException(status_code=400, detail="record_id is required for update operations")
+
+    update_fields = {}
+
     if role == "admin":
-        if event == "CREATE_PATIENT":
-            await db_layer.db_create_patient(raw_data)
-            return {"status": "SUCCESS", "msg": "Admin: Patient record created."}
-        
-    # Role: Medical Tech
+        if event == "UPDATE_PATIENT_INFO":
+            update_fields = data 
+        else:
+            raise HTTPException(status_code=403, detail="Admin can only update general record info.")
+
     elif role == "medical_tech":
         if event == "UPDATE_LABS":
-            update = {
-                "clinical_record.imaging": raw_data.get("imaging"),
-                "clinical_record.biomarkers": raw_data.get("biomarkers")
+            update_fields = {
+                "clinical_record.imaging": data.get("imaging"),
+                "clinical_record.biomarkers": data.get("biomarkers")
             }
-            await db_layer.db_update_record(rec_id, update)
-            return {"status": "SUCCESS", "msg": "MedTech: Lab data updated."}
+        else:
+            raise HTTPException(status_code=403, detail="Medical Tech can only update scans/imaging/biomarkers.")
 
-    # Role: Doctor
     elif role == "doctor":
-        if event == "RUN_PROGNOSIS":
-            # AI simulation, but using input data for now
-            update = {"clinical_record.diagnosis.name": raw_data.get("diagnosis")}
-            await db_layer.db_update_record(rec_id, update)
-            return {"status": "SUCCESS", "msg": "Doctor: AI Prognosis Generated."}
-        
+        if event == "INPUT_DIAGNOSIS":
+            update_fields = {"clinical_record.diagnosis": data}
+        elif event == "MODIFY_PROGNOSIS":
+            update_fields = {"clinical_record.ai_prognosis.doctor_confirmation": data}
         elif event == "UPDATE_TREATMENT":
-            update = {"clinical_record.treatment": raw_data}
-            await db_layer.db_update_record(rec_id, update)
-            return {"status": "SUCCESS", "msg": "Doctor: Treatment plan updated."}
+            update_fields = {"clinical_record.treatment": data}
+        else:
+            raise HTTPException(status_code=403, detail="Invalid Doctor update event.")
 
-    # Role: Pharmacist
-    elif role == "pharmacist":
-        if event == "GET_PRESCRIPTION":
-            history_data = await db_layer.db_get_patient_history(p_id)
-        if history_data["history"]:
-            return {"status": "SUCCESS", "data": history_data["history"][0].get("clinical_record", {}).get("treatment")}
-        return {"status": "ERROR", "msg": "No prescription found."}
+    else:
+        raise HTTPException(status_code=403, detail=f"Role {role} is not authorized to update records.")
+
+    await db_layer.db_update_record(record_id, update_fields)
+    return {"status": "SUCCESS", "msg": f"{event} completed successfully."}
+
+
+# The System Getaway
+@router.post("/gateway")
+async def system_gateway(payload: GatewayRequest, role: str = Header(None)):    
+    event = payload.event.upper()
+    payload = await requests.request.json()
     
-    raise HTTPException(status_code=403, detail="Unauthorized role or event.")
+    # Logic to route based on Operation Type
+    if event.startswith("CREATE"):
+        return await create(role, event, payload.data)
+    
+    if event.startswith("GET"):
+        return await read(role, event, payload.patient_id)
+    
+    if event.startswith("UPDATE") or event.startswith("INPUT") or event.startswith("MODIFY"):
+        return await update(role, event, payload.record_id, payload.data)
+
+    raise HTTPException(status_code=400, detail="Unknown operation category.")
+
 
 
 # Run AI Prognosis in background 
@@ -110,3 +156,4 @@ async def delete_patient(p_id: str, role: str = Header(None)):
     if role != "admin":
         raise HTTPException(status_code=403, detail="Only Admins can delete.")
     return await db_layer.db_delete_patient(p_id)
+

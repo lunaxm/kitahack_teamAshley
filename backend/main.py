@@ -14,6 +14,7 @@ from app.routes.runpod_api import router as runpod_api_router
 from app.routes.database_api import router as database_api_router
 from app.routes.medgemma_api import router as medgemma_api_router
 from app.services import database as db_layer
+from app.model.models import PatientCreateRequest, GatewayRequest
 ###app.include_router(database_api_router, prefix="/api/database")
 
 load_dotenv()
@@ -32,7 +33,7 @@ async def lifespan(app: FastAPI):
         MONGODB_URL, tlsCAFile=certifi.where())
 
     try:
-        # Verify connection by 
+        # Verify the connection by 
         await app.mongodb_client.admin.command('ping')
         print("Successfully connected to MongoDB!", flush=True)
     except Exception as e:

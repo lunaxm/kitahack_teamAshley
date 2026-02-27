@@ -9,6 +9,12 @@ db = None
 patients_collection = None
 records_collection = None
 
+def initialize_db(client: AsyncIOMotorClient):
+    global db, patients_collection, records_collection
+    db_name = os.getenv("db", "MedicalDB").strip()
+    db = client[db_name]
+    patients_collection = db["Patients"]
+    records_collection = db["Records"]
 
 # Dashboard Logic 
 async def get_stats():
@@ -47,9 +53,9 @@ async def db_search_patients(term: str):
         return None
     
     for p in patients:
-        latest_visit = records_collection.find_one({"patient_id": p["_id"]}, sort=[("visit_date", -1)])
-        p["latest_status"] = latest_visit["clinical_record"]["diagnosis"]["status"] if latest_visit else "No Visit"
         p["_id"] = str(p["_id"])
+        latest_visit = await records_collection.find_one({"patient_id": p["_id"]}, sort=[("visit_date", -1)])
+        p["latest_status"] = latest_visit["clinical_record"]["diagnosis"]["status"] if latest_visit else "No Visit"
     return patients
 
 # CRUD Operations

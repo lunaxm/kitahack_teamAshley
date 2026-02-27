@@ -1,11 +1,20 @@
-* {
-  margin: 0;
-  padding: 0;
+/* ===========================
+   GLOBAL RESET
+   =========================== */
+*, *::before, *::after {
   box-sizing: border-box;
 }
 
-.app {
+body {
+  margin: 0;
+  padding: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ===========================
+   LOGIN PAGE ONLY
+   =========================== */
+.app {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   display: flex;
