@@ -60,5 +60,8 @@ app = FastAPI(title="kitahack_teamAshley Gateway", lifespan=lifespan)
 app.include_router(runpod_api_router, prefix = "/runpod")
 app.include_router(database_api_router, prefix = "/database")
 app.include_router(medgemma_api_router, prefix = "/medgemma")
+<<<<<<< Updated upstream
 
 
+=======
+>>>>>>> Stashed changes

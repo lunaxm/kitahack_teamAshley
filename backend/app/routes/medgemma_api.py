@@ -1,4 +1,5 @@
 # app/routes/medgemma_api.py
+<<<<<<< Updated upstream
 import asyncio
 import asyncio
 import os
@@ -9,6 +10,15 @@ from app.services.prompt_builder import build_prognosis_prompt, build_treatment_
 router = APIRouter()
 RUNPOD_URL = f"https://api.runpod.ai/v2/{os.getenv('RUNPOD_ENDPOINT_ID')}/run"
 RUNPOD_STATUS_URL = f"https://api.runpod.ai/v2/{os.getenv('RUNPOD_ENDPOINT_ID')}/status" # <--- ADD THIS URL
+=======
+import os
+from fastapi import APIRouter, Request, HTTPException, Depends
+from pydantic import BaseModel
+from app.services.prompt_builder import build_prognosis_prompt, build_treatment_prompt
+
+router = APIRouter()
+RUNPOD_URL = f"https://api.runpod.ai/v2/{os.getenv('RUNPOD_ENDPOINT_ID')}/runsync"
+>>>>>>> Stashed changes
 
 class PrognosisRequest(BaseModel):
     patient_id: str
@@ -25,16 +35,27 @@ class TreatmentRequest(BaseModel):
 @router.post("/generate-prognosis")
 async def get_ai_prognosis(request: Request, payload: PrognosisRequest):
     # 1. Fetch historical records from MongoDB
+<<<<<<< Updated upstream
     # db = request.app.database
     # records_collection = db["ClinicalRecords"]
     # history_cursor = records_collection.find({"patient_id": payload.patient_id}).sort("visit_date", -1)
     # historical_records = await history_cursor.to_list(length=10)
+=======
+    db = request.app.database
+    records_collection = db["ClinicalRecords"]
+    history_cursor = records_collection.find({"patient_id": payload.patient_id}).sort("visit_date", -1)
+    historical_records = await history_cursor.to_list(length=10)
+>>>>>>> Stashed changes
     
     # 2. Build the strict prompt
     engineered_prompt = build_prognosis_prompt(
         role_key=payload.role,
         current_details=payload.current_details,
+<<<<<<< Updated upstream
         historical_records=[],  # No historical records in this version
+=======
+        historical_records=historical_records,
+>>>>>>> Stashed changes
         has_image=bool(payload.image_base64)
     )
     
@@ -47,6 +68,7 @@ async def get_ai_prognosis(request: Request, payload: PrognosisRequest):
     }
     
     client = request.app.runpod_client
+<<<<<<< Updated upstream
     # response = await client.post(RUNPOD_URL, json=runpod_payload)
     # response.raise_for_status()
 
@@ -90,6 +112,13 @@ async def get_ai_prognosis(request: Request, payload: PrognosisRequest):
         print(f"RunPod Error Data: {result_data}")
         raise HTTPException(status_code=500, detail=f"RunPod job failed with status: {status}")
 
+=======
+    response = await client.post(RUNPOD_URL, json=runpod_payload)
+    response.raise_for_status()
+    
+    return {"status": "success", "prognosis_data": response.json()["output"]["medical_analysis"]}
+
+>>>>>>> Stashed changes
 @router.post("/generate-treatment")
 async def get_ai_treatment(request: Request, payload: TreatmentRequest):
     # Fetch history again

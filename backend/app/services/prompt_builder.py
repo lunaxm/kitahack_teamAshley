@@ -1,5 +1,9 @@
+<<<<<<< Updated upstream
 # app/services/prompt_builder.
 import re
+=======
+# app/services/prompt_builder.py
+>>>>>>> Stashed changes
 
 # Dictionary of specialized medical roles
 MEDICAL_ROLES = {
@@ -57,6 +61,7 @@ def build_prognosis_prompt(role_key: str, current_details: dict, historical_reco
     if has_image:
         context_str += "\n**Medical Imaging:**\n- [An image/scan has been provided in the input payload for your visual analysis.]\n"
 
+<<<<<<< Updated upstream
     # 4. Detailed Task (Flush left to avoid leading spaces)
     detailed_task = """### Analysis Task:
 Provide the top 10 potential prognoses based on the clinical context and visual inferences from the scan.
@@ -114,6 +119,26 @@ Details: [Your detailed clinical inference and justification]"""
 
 {context_str}
 
+=======
+    # 4. Detailed Task
+    detailed_task = """### Analysis Task:
+Provide the top 10 potential prognoses based on the clinical context and visual inferences from the scan. For each prognosis, you must provide a probability score and a clinical justification detailing your reasoning."""
+
+    # 5. Output Format
+    output_format = """### Output Format:
+Please format your response strictly as follows:
+1. **[Prognosis Name]** (Probability: [XX]%)
+   - **Justification:** [Your detailed clinical inference based on the scans and blood test results]
+2. **[Prognosis Name]** (Probability: [XX]%)
+   - **Justification:** [...]
+...(continue for top 10)"""
+
+    # Assemble the final prompt
+    final_prompt = f"""{role_str}
+{objective_str}
+
+{context_str}
+>>>>>>> Stashed changes
 {detailed_task}
 
 {output_format}"""
@@ -155,6 +180,7 @@ Please format your response strictly as follows:
 {context_str}
 {output_format}"""
 
+<<<<<<< Updated upstream
     return final_prompt.strip()
 
 def parse_prognosis_text_to_json(raw_text: str) -> list:
@@ -179,3 +205,6 @@ def parse_prognosis_text_to_json(raw_text: str) -> list:
             })
             
     return parsed_data
+=======
+    return final_prompt.strip()
+>>>>>>> Stashed changes
