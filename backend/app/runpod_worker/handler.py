@@ -1,3 +1,6 @@
+# this file is the entry point for your RunPod GPU worker. It defines a handler function that processes incoming jobs, and initializes the MedGemma model 
+# with LoRA adapters when the worker starts up. The handler receives prompts and base64-encoded images, runs inference through the model, and returns 
+# the generated medical analysis.
 import runpod
 import torch
 import base64

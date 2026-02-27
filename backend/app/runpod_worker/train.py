@@ -1,3 +1,7 @@
+# this file defines the training pipeline for fine-tuning the MedGemma model using QLoRA. 
+# It loads the base model in 4-bit quantized mode, attaches LoRA adapters, and trains on a custom medical dataset. 
+# The training loop is configured to be efficient on 24GB GPUs, and saves only the adapter weights after training to minimize storage requirements. 
+# Make sure to set your Hugging Face token in the HF_TOKEN environment variable before running this script.
 import os
 import torch
 from datasets import load_dataset

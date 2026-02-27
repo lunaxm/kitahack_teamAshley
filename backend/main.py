@@ -57,6 +57,7 @@ async def lifespan(app: FastAPI):
     print("MongoDB connection closed.", flush=True)
 
 app = FastAPI(title="kitahack_teamAshley Gateway", lifespan=lifespan)
+<<<<<<< Updated upstream
 app.include_router(runpod_api_router, prefix = "/api/runpod")
 app.include_router(database_api_router, prefix = "/api/database")
 app.include_router(medgemma_api_router, prefix = "/api/medgemma")
@@ -83,3 +84,8 @@ async def debug(role: str = Header(None)):
     if role != "admin":
         raise HTTPException(status_code=403, detail="Only Admins can view raw data.")
     return await db_layer.db_get_debug_data()
+=======
+app.include_router(runpod_api_router, prefix = "/runpod")
+app.include_router(database_api_router, prefix = "/database")
+app.include_router(medgemma_api_router, prefix = "/medgemma")
+>>>>>>> Stashed changes
