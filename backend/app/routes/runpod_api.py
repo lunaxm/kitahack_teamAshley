@@ -1,12 +1,17 @@
 import os
 import base64
 import requests
+import sys
+# Add the current directory and the parent directory to the path
+sys.path.append(os.getcwd())
+sys.path.append(os.path.join(os.getcwd(), "app"))
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, APIRouter   
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Header, Request, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 # from app.services.database import get_stats, db_search_patients, db_delete_patient, db_get_debug_data
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 import app.services.database as db_layer
 
 load_dotenv()

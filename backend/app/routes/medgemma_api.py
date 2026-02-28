@@ -1,8 +1,13 @@
 # app/routes/medgemma_api.py
 import asyncio
 import os
+import sys
+# Add the current directory and the parent directory to the path
+sys.path.append(os.getcwd())
+sys.path.append(os.path.join(os.getcwd(), "app"))
 from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from app.services.prompt_builder import (
     build_prognosis_prompt, 
     build_treatment_prompt, 

@@ -1,7 +1,9 @@
 # backend/Dockerfile
 
 # 1. Use a lightweight Python version
-FROM python:3.11-slim
+# FROM python:3.11-slim
+# FROM runpod/pytorch:2.2.1-py3.10-cuda12.1.1-devel
+FROM pytorch/pytorch:2.2.1-cuda12.1-cudnn8-runtime
 
 # 2. Set the working directory
 WORKDIR /app
