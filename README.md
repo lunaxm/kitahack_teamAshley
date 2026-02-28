@@ -39,9 +39,10 @@ Selection: Docker Compose orchestrates the entire application.
 
 Justification: Docker ensures environmental consistency across the React frontend, FastAPI backend, and the CUDA-enabled AI worker, isolating dependencies and streamlining deployment.
 
-3. Project Structure
+## 3. Project Structure
 The MedGenius repository is structured as a containerized monorepo, separating the frontend and backend while unifying deployment through Docker Compose.
 
+```text
 ├── .github/                 # GitHub Actions for CI/CD workflows
 ├── backend/                 # FastAPI server & MedGemma inference logic
 │   ├── app/                 # Application modules
@@ -79,6 +80,7 @@ The MedGenius repository is structured as a containerized monorepo, separating t
 │   ├── package.json         # Frontend scripts and dependency list
 │   └── README.md            # Frontend-specific documentation
 └── docker-compose.yml       # Orchestrates frontend, backend, and volumes
+```
 
 4. Technical Implementation & Challenges
 Building a production-ready application around a massive 27B parameter model presented several hurdles, which were addressed with specific technical decisions to ensure a functional prototype:
